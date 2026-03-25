@@ -32,9 +32,18 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 
 def extract_json(text: str) -> str:
     """Extract the first valid JSON object from an arbitrary text block."""
-    json_match = re.search(r'\{.*\}', text, re.DOTALL)
-    if json_match:
-        return json_match.group(0)
+    try:
+        # Strategy 1: Find everything between the first '{' and the last '}'
+        json_match = re.search(r'\{.*\}', text, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(0)
+            # Try to validate that it is at least loadable
+            json.loads(json_str)
+            return json_str
+    except Exception:
+        pass
+    
+    # Fallback: if regex fail or json load fail, return original or minimal valid JSON
     return text
 
 
@@ -102,7 +111,8 @@ Domain: {req.role}
 User Skills: {', '.join(req.skills)}
 Focus also on missing skills: {', '.join(req.missingSkills)}
 
-Return STRICT JSON ONLY, no conversational text.
+Return ONLY JSON. Do not add explanation or text.
+STRICT JSON FORMAT:
 {{
 "questions": [],
 "coding": {{
@@ -137,8 +147,20 @@ Return STRICT JSON ONLY, no conversational text.
             return json.loads(clean_json)
         except Exception as parse_err:
             logger.error(f"Failed to parse AI assessment JSON. Raw: {ai_text}")
-            raise HTTPException(status_code=500, detail="AI generated invalid assessment JSON")
+            # Fallback JSON as requested
+            return {{
+                "questions": ["Basic technical evaluation question?"],
+                "coding": {{
+                    "title": "Problem Title",
+                    "description": "Problem Description",
+                    "input_format": "N/A",
+                    "output_format": "N/A",
+                    "constraints": "N/A",
+                    "sample_input": "N/A",
+                    "sample_output": "N/A"
+                }}
+            }}
 
     except requests.exceptions.RequestException as e:
         logger.error(f"Ollama connection error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Ollama connection error")
+        raise HTTPException(status_code=503, detail="Ollama service unavailable")
