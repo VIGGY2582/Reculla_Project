@@ -16,7 +16,10 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 import org.springframework.http.ResponseEntity;
-import java.util.UUID;
+import com.skillscope.dto.AssessmentResponseDTO;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.skillscope.entity.AssessmentResult;
+import com.skillscope.repository.AssessmentResultRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -26,10 +29,36 @@ public class AssessmentServiceImpl implements AssessmentService {
     private final AssessmentRepository assessmentRepository;
     private final UserRepository userRepository;
     private final SkillAnalysisService skillAnalysisService;
+    private final AssessmentResultRepository assessmentResultRepository;
     private final ObjectMapper objectMapper;
 
     @Override
-    public Assessment generateAssessment(UUID userId) {
+    public void submitAssessment(UUID userId, Map<String, Object> answers) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Find the latest assessment for this user
+        Assessment assessment = assessmentRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
+                .orElseThrow(() -> new RuntimeException("No assessment found for user"));
+
+        try {
+            AssessmentResult result = AssessmentResult.builder()
+                    .user(user)
+                    .assessment(assessment)
+                    .score(80) // Dummy score for now
+                    .answers(objectMapper.writeValueAsString(answers))
+                    .build();
+
+            assessmentResultRepository.save(result);
+            log.info("Assessment result saved for user: {}", userId);
+        } catch (Exception e) {
+            log.error("Failed to save assessment result", e);
+            throw new RuntimeException("Failed to submit assessment: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public AssessmentResponseDTO generateAssessment(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -39,15 +68,10 @@ public class AssessmentServiceImpl implements AssessmentService {
             log.info("Generating assessment for user: {} with role: {}", userId, analysis.getBestRole());
             Map<String, Object> responseBody = callAiAssessmentService(analysis);
             
-            // Debugging as requested
-            System.out.println("AI Response: " + responseBody);
-
-            if (responseBody == null) {
-                throw new RuntimeException("AI response is null");
-            }
-
+            log.info("AI Response Body: {}", responseBody);
+            
             // Extract JSON safely as requested
-            List<String> questions = (List<String>) responseBody.get("questions");
+            List<Object> questions = (List<Object>) responseBody.get("questions");
             Map<String, Object> coding = (Map<String, Object>) responseBody.get("coding");
 
             Assessment assessment = Assessment.builder()
@@ -57,7 +81,13 @@ public class AssessmentServiceImpl implements AssessmentService {
                     .codingProblem(objectMapper.writeValueAsString(coding))
                     .build();
 
-            return assessmentRepository.save(assessment);
+            Assessment savedAssessment = assessmentRepository.save(assessment);
+
+            return AssessmentResponseDTO.builder()
+                    .role(savedAssessment.getRole())
+                    .questions(objectMapper.readValue(savedAssessment.getQuestions(), new TypeReference<List<Object>>() {}))
+                    .coding(objectMapper.readValue(savedAssessment.getCodingProblem(), new TypeReference<Map<String, Object>>() {}))
+                    .build();
         } catch (Exception e) {
             e.printStackTrace(); // as requested
             log.error("AI Generation failed, using fallback assessment. Error: {}", e.getMessage());
@@ -71,7 +101,14 @@ public class AssessmentServiceImpl implements AssessmentService {
                         .questions(objectMapper.writeValueAsString(fallback.get("questions")))
                         .codingProblem(objectMapper.writeValueAsString(fallback.get("coding")))
                         .build();
-                return assessmentRepository.save(assessment);
+
+                Assessment savedAssessment = assessmentRepository.save(assessment);
+                
+                return AssessmentResponseDTO.builder()
+                        .role(savedAssessment.getRole())
+                        .questions(objectMapper.readValue(savedAssessment.getQuestions(), new TypeReference<List<Object>>() {}))
+                        .coding(objectMapper.readValue(savedAssessment.getCodingProblem(), new TypeReference<Map<String, Object>>() {}))
+                        .build();
             } catch (Exception fatal) {
                 throw new RuntimeException("Fatal error during fallback assessment generation");
             }

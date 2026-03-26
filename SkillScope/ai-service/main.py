@@ -123,15 +123,21 @@ Focus also on missing skills: {', '.join(req.missingSkills)}
 Return ONLY JSON. Do not add explanation or text.
 STRICT JSON FORMAT:
 {{
-"questions": [],
+"questions": [
+  {{
+    "question": "What is the primary role of a Load Balancer?",
+    "options": ["Encapsulating data", "Distributing network traffic", "Storing backups", "Debugging code"]
+  }}
+],
 "coding": {{
-"title": "",
-"description": "",
-"input_format": "",
-"output_format": "",
-"constraints": "",
-"sample_input": "",
-"sample_output": ""
+"title": "Reverse String",
+"description": "Write a function to reverse a string in-place.",
+"input_format": "A string 's'",
+"output_format": "The reversed string",
+"constraints": "s.length < 1000",
+"sample_input": "'hello'",
+"sample_output": "'olleh'",
+"placeholder": "// Code here"
 }}
 }}
 """
@@ -157,18 +163,24 @@ STRICT JSON FORMAT:
         except Exception as parse_err:
             logger.error(f"Failed to parse AI assessment JSON. Raw: {ai_text}")
             # Fallback JSON as requested
-            return {{
-                "questions": ["Basic technical evaluation question?"],
-                "coding": {{
+            return {
+                "questions": [
+                    {
+                        "question": "Basic technical evaluation question?",
+                        "options": ["Option A", "Option B", "Option C", "Option D"]
+                    }
+                ],
+                "coding": {
                     "title": "Problem Title",
                     "description": "Problem Description",
                     "input_format": "N/A",
                     "output_format": "N/A",
                     "constraints": "N/A",
                     "sample_input": "N/A",
-                    "sample_output": "N/A"
-                }}
-            }}
+                    "sample_output": "N/A",
+                    "placeholder": "// Solution"
+                }
+            }
 
     except requests.exceptions.RequestException as e:
         logger.error(f"Ollama connection error: {str(e)}")

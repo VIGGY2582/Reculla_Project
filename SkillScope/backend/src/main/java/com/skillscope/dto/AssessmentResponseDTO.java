@@ -5,15 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.Map;
+
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class AuthResponse {
-    private String token;
-    private String type = "Bearer";
-    private java.util.UUID userId;
-    private String name;
-    private String email;
+@AllArgsConstructor
+public class AssessmentResponseDTO {
     private String role;
+    private List<Object> questions;
+    private Map<String, Object> coding;
 }

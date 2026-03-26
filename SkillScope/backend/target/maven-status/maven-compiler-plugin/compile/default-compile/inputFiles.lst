@@ -1,3 +1,4 @@
+C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\dto\AssessmentResponseDTO.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\repository\AssessmentRepository.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\dto\AuthResponse.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\entity\Resume.java
@@ -16,6 +17,7 @@ C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\r
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\entity\JobRoleSkill.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\security\UserDetailsServiceImpl.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\security\UserDetailsImpl.java
+C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\repository\AssessmentResultRepository.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\service\AssessmentServiceImpl.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\service\SkillAnalysisServiceImpl.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\service\RoadmapService.java
@@ -51,3 +53,4 @@ C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\d
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\repository\JobRoleSkillRepository.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\service\ProgressServiceImpl.java
 C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\controller\RoadmapController.java
+C:\Users\T-rex\Desktop\Reculla\SkillScope\backend\src\main\java\com\skillscope\entity\AssessmentResult.java
