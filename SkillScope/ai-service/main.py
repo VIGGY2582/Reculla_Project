@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
+from typing import List, Dict, Any
 import json
 import logging
 import re
@@ -19,6 +20,14 @@ class ExtractedResume(BaseModel):
     name: str
     skills: list[str]
     experience: str
+
+
+class RoadmapRequest(BaseModel):
+    role: str
+    missingSkills: List[str]
+
+class RoadmapResponse(BaseModel):
+    plan: List[dict]
 
 
 class AssessmentRequest(BaseModel):
@@ -160,6 +169,60 @@ STRICT JSON FORMAT:
                     "sample_output": "N/A"
                 }}
             }}
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Ollama connection error: {str(e)}")
+        raise HTTPException(status_code=503, detail="Ollama service unavailable")
+
+
+@app.post("/generate-roadmap")
+async def generate_roadmap(req: RoadmapRequest):
+    prompt = f"""Generate a 7-day learning roadmap.
+Role: {req.role}
+Focus on missing skills: {', '.join(req.missingSkills)}
+
+Return ONLY JSON. Do not add explanation or text.
+STRICT JSON FORMAT:
+{{
+"plan": [
+{{
+"day": 1,
+"topic": "Topic Name",
+"tasks": ["Task 1", "Task 2"]
+}}
+]
+}}
+"""
+    payload = {
+        "model": "mistral",
+        "prompt": prompt,
+        "stream": False,
+        "format": "json"
+    }
+
+    try:
+        logger.info(f"Generating roadmap for role: {req.role}")
+        response = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        response.raise_for_status()
+
+        result_json = response.json()
+        ai_text = result_json.get("response", "")
+        clean_json = extract_json(ai_text)
+
+        try:
+            return json.loads(clean_json)
+        except Exception as parse_err:
+            logger.error(f"Failed to parse AI roadmap JSON. Raw: {ai_text}")
+            # Fallback Roadmap
+            return {
+                "plan": [
+                    {
+                        "day": 1,
+                        "topic": "Fundamentals of " + req.role,
+                        "tasks": ["Review core concepts", "Research documentation"]
+                    }
+                ]
+            }
 
     except requests.exceptions.RequestException as e:
         logger.error(f"Ollama connection error: {str(e)}")
