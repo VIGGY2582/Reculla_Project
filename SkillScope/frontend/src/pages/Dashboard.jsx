@@ -1,7 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import API from '../services/api';
 
 const Dashboard = () => {
+    const [progressData, setProgressData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProgress = async () => {
+            try {
+                const res = await API.get('/progress/mine');
+                setProgressData(res.data);
+            } catch (err) {
+                console.error("Error fetching progress:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProgress();
+    }, []);
+
+    const stats = {
+        total: progressData.length,
+        inProgress: progressData.filter(p => p.status === 'IN_PROGRESS').length,
+        completed: progressData.filter(p => p.status === 'COMPLETED').length,
+    };
+
+    const readinessScore = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+
     return (
         <div className="container py-4">
             <div className="row mt-2 mb-5">
@@ -31,6 +57,90 @@ const Dashboard = () => {
                                 />
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Career Progress Overview */}
+            <div className="row mb-5">
+                <div className="col-12">
+                    <div className="d-flex align-items-center mb-4 ms-2">
+                        <div className="bg-primary rounded-3 p-2 me-3 text-white shadow-sm">
+                            <i className="bi bi-graph-up-arrow fs-5"></i>
+                        </div>
+                        <h4 className="fw-bold mb-0">Career Progress Overview</h4>
+                    </div>
+                </div>
+                <div className="col-lg-8">
+                    <div className="row g-4">
+                        <div className="col-md-4">
+                            <div className="card border-0 shadow-sm h-100 p-3 text-center">
+                                <span className="text-muted small fw-medium mb-1">Total Skills</span>
+                                <h2 className="fw-bold text-primary mb-0">{stats.total}</h2>
+                            </div>
+                        </div>
+                        <div className="col-md-4">
+                            <div className="card border-0 shadow-sm h-100 p-3 text-center">
+                                <span className="text-muted small fw-medium mb-1">In Progress</span>
+                                <h2 className="fw-bold text-info mb-0">{stats.inProgress}</h2>
+                            </div>
+                        </div>
+                        <div className="col-md-4">
+                            <div className="card border-0 shadow-sm h-100 p-3 text-center">
+                                <span className="text-muted small fw-medium mb-1">Completed</span>
+                                <h2 className="fw-bold text-success mb-0">{stats.completed}</h2>
+                            </div>
+                        </div>
+                        <div className="col-12">
+                            <div className="card border-0 shadow-sm p-4">
+                                <h6 className="fw-bold mb-3">Recent Skills Breakdown</h6>
+                                {loading ? (
+                                    <div className="text-center py-3">
+                                        <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                    </div>
+                                ) : progressData.length > 0 ? (
+                                    <div className="list-group list-group-flush border-0">
+                                        {progressData.slice(0, 4).map((p, idx) => (
+                                            <div key={idx} className="list-group-item border-0 px-0 py-3 bg-transparent">
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="fw-semibold">{p.skill}</span>
+                                                    <span className={`badge ${p.status === 'COMPLETED' ? 'bg-success' : 'bg-info'} opacity-75`}>
+                                                        {p.status.replace('_', ' ')}
+                                                    </span>
+                                                </div>
+                                                <div className="progress" style={{ height: '8px', borderRadius: '4px' }}>
+                                                    <div 
+                                                        className={`progress-bar ${p.status === 'COMPLETED' ? 'bg-success' : 'progress-bar-animated progress-bar-striped bg-info'}`} 
+                                                        role="progressbar" 
+                                                        style={{ width: p.status === 'COMPLETED' ? '100%' : '50%' }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-4 bg-light rounded-3">
+                                        <p className="text-muted mb-0 small">No skills tracked yet. Start a skill analysis to populate this.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-lg-4">
+                    <div className="card border-0 shadow-sm h-100 p-4 text-center d-flex flex-column justify-content-center align-items-center overflow-hidden position-relative">
+                        <div className="position-absolute top-0 end-0 p-3 opacity-10">
+                            <i className="bi bi-trophy display-1"></i>
+                        </div>
+                        <h6 className="fw-bold mb-4">Readiness Score</h6>
+                        <div className="position-relative mb-4" style={{ height: '140px', width: '140px' }}>
+                            <svg className="w-100 h-100" viewBox="0 0 36 36">
+                                <path className="text-light" fill="none" strokeWidth="3" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path className="text-primary" fill="none" strokeWidth="3" strokeDasharray={`${readinessScore}, 100`} strokeLinecap="round" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <text x="18" y="20.35" className="fw-bold" textAnchor="middle" style={{ fontSize: '8px', fill: 'var(--dark-bg)', fontFamily: 'Outfit' }}>{readinessScore}%</text>
+                            </svg>
+                        </div>
+                        <p className="text-muted small mb-0">Your overall career readiness based on completed skills and assessments.</p>
                     </div>
                 </div>
             </div>
@@ -70,3 +180,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

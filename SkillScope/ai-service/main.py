@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
@@ -10,6 +11,9 @@ app = FastAPI(title="SkillScope AI Processing Service")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
+logger.info("Using Ollama endpoint: %s", OLLAMA_URL)
 
 
 class ResumeText(BaseModel):
@@ -82,7 +86,7 @@ Resume:
     }
 
     try:
-        logger.info("Sending request to Ollama for skill extraction...")
+        logger.info("Sending request to Ollama for skill extraction at %s", OLLAMA_URL)
         response = requests.post(OLLAMA_URL, json=payload, timeout=120)
         response.raise_for_status()
 
@@ -109,7 +113,7 @@ Resume:
             raise HTTPException(status_code=500, detail="AI generated invalid JSON")
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Ollama connection error: {str(e)}")
+        logger.error("Ollama connection error at %s: %s", OLLAMA_URL, str(e))
         raise HTTPException(status_code=500, detail="Ollama connection error")
 
 
@@ -150,7 +154,7 @@ STRICT JSON FORMAT:
     }
 
     try:
-        logger.info(f"Generating assessment for role: {req.role}")
+        logger.info("Generating assessment for role: %s using %s", req.role, OLLAMA_URL)
         response = requests.post(OLLAMA_URL, json=payload, timeout=180)
         response.raise_for_status()
 
@@ -183,7 +187,7 @@ STRICT JSON FORMAT:
             }
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Ollama connection error: {str(e)}")
+        logger.error("Ollama connection error at %s: %s", OLLAMA_URL, str(e))
         raise HTTPException(status_code=503, detail="Ollama service unavailable")
 
 
@@ -213,7 +217,7 @@ STRICT JSON FORMAT:
     }
 
     try:
-        logger.info(f"Generating roadmap for role: {req.role}")
+        logger.info("Generating roadmap for role: %s using %s", req.role, OLLAMA_URL)
         response = requests.post(OLLAMA_URL, json=payload, timeout=180)
         response.raise_for_status()
 
@@ -237,5 +241,5 @@ STRICT JSON FORMAT:
             }
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Ollama connection error: {str(e)}")
+        logger.error("Ollama connection error at %s: %s", OLLAMA_URL, str(e))
         raise HTTPException(status_code=503, detail="Ollama service unavailable")

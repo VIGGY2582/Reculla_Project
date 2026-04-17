@@ -48,6 +48,11 @@ const Navbar = () => {
                                 <li className="nav-item mx-1">
                                     <Link className="nav-link fw-medium" to="/roadmap">Roadmap</Link>
                                 </li>
+                                <li className="nav-item mx-1">
+                                    <Link className="nav-link fw-medium text-primary fw-bold" to="/jobs">
+                                        <i className="bi bi-briefcase me-1"></i> Jobs
+                                    </Link>
+                                </li>
                                 <li className="nav-item ms-3">
                                     <button className="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold" onClick={handleLogout}>Logout</button>
                                 </li>

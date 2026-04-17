@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import CodeEditor from '../components/CodeEditor';
 
 const Assessment = () => {
     const [assessment, setAssessment] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [code, setCode] = useState("");
     const [selectedAnswers, setSelectedAnswers] = useState({});
     const [submitted, setSubmitted] = useState(false);
     const userId = localStorage.getItem('userId');
@@ -34,7 +36,7 @@ const Assessment = () => {
     const handleSubmit = async () => {
         setLoading(true);
         try {
-            await API.post('/assessment/submit', selectedAnswers);
+            await API.post('/assessment/submit', { ...selectedAnswers, code });
             setSubmitted(true);
         } catch (err) {
             console.error(err);
@@ -42,6 +44,12 @@ const Assessment = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSubmitCode = () => {
+        console.log("Submitted Code:", code);
+        // Demo-safe fallback
+        alert("Coding solution saved to current session!");
     };
 
     return (
@@ -133,13 +141,21 @@ const Assessment = () => {
                             </div>
                             <hr className="bg-secondary opacity-50 mb-4" />
                             <h5 className="fw-bold text-info">{assessment.coding.title}</h5>
-                            <p className="text-light opacity-75 lh-lg">{assessment.coding.description}</p>
-                            <div className="bg-black p-4 rounded-3 mt-4 border border-secondary border-opacity-25" style={{ position: 'relative' }}>
-                                <div className="position-absolute top-0 end-0 p-2 opacity-50"><i className="bi bi-terminal"></i></div>
-                                <code className="text-success fs-6" style={{ fontFamily: "'Fira Code', monospace" }}>
-                                    {assessment.coding.placeholder}
-                                </code>
-                            </div>
+                            <p className="text-light opacity-75 lh-lg mb-0">{assessment.coding.description}</p>
+                            
+                            <CodeEditor 
+                                value={code}
+                                onChange={setCode}
+                                language="java"
+                                placeholder="// Write your code solution here..."
+                            />
+
+                            <button 
+                                className="btn btn-info btn-lg w-100 mt-4 fw-bold shadow-sm rounded-pill text-white"
+                                onClick={handleSubmitCode}
+                            >
+                                <i className="bi bi-cloud-upload me-2"></i> Submit Code
+                            </button>
                         </div>
                     </div>
                 </div>

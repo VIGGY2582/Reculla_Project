@@ -8,6 +8,7 @@ import ResumeUpload from './pages/ResumeUpload';
 import SkillAnalysis from './pages/SkillAnalysis';
 import Assessment from './pages/Assessment';
 import Roadmap from './pages/Roadmap';
+import JobRecommendations from './pages/JobRecommendations';
 
 function App() {
   const token = localStorage.getItem('token');
@@ -24,6 +25,7 @@ function App() {
           <Route path="/analysis" element={token ? <SkillAnalysis /> : <Navigate to="/login" />} />
           <Route path="/assessment" element={token ? <Assessment /> : <Navigate to="/login" />} />
           <Route path="/roadmap" element={token ? <Roadmap /> : <Navigate to="/login" />} />
+          <Route path="/jobs" element={token ? <JobRecommendations /> : <Navigate to="/login" />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </div>

@@ -188,6 +188,30 @@ code {
   font-size: 0.9em;
 }
 
+/* Dashboard Stat Cards */
+.stat-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-glow) !important;
+}
+
+.progress-bar {
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* readiness score animation */
+@keyframes dash {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+svg path.text-primary {
+  transition: stroke-dasharray 1.5s ease-out;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -200,3 +224,5 @@ code {
 
 .row > div:nth-child(1) { animation-delay: 0.1s; }
 .row > div:nth-child(2) { animation-delay: 0.2s; }
+.row > div:nth-child(3) { animation-delay: 0.3s; }
+
