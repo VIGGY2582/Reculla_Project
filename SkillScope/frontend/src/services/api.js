@@ -15,4 +15,18 @@ API.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
+// Add a response interceptor to handle 401 errors
+API.interceptors.response.use((response) => {
+    return response;
+}, (error) => {
+    if (error.response && error.response.status === 401) {
+        console.warn("Session expired or unauthorized. Redirecting to login...");
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        window.location.href = '/login?expired=true';
+    }
+    return Promise.reject(error);
+});
+
 export default API;
+

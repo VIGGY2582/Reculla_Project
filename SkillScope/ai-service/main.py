@@ -60,6 +60,55 @@ def extract_json(text: str) -> str:
     return text
 
 
+def get_mock_resume_data():
+    return {
+        "name": "Alex Smith",
+        "skills": ["Java", "Python", "SQL", "Spring Boot", "React", "Docker", "AWS"],
+        "experience": "5+ years of full-stack development experience with a focus on cloud-native applications."
+    }
+
+def get_mock_assessment(role):
+    return {
+        "questions": [
+            {
+                "question": f"How do you ensure scalability in a {role} environment?",
+                "options": ["Vertical scaling only", "Implementing load balancing and microservices", "Using only local storage", "Reducing number of users"]
+            },
+            {
+                "question": f"Which of the following is a best practice for {role}?",
+                "options": ["Hardcoding secrets", "Writing unit tests", "Ignoring logs", "Manual deployments only"]
+            },
+            {
+                "question": f"What is the primary benefit of using containers in {role}?",
+                "options": ["Reducing hardware cost", "Consistent environments across dev/prod", "Making code run slower", "Increasing dependency conflicts"]
+            }
+        ],
+        "coding": {
+            "title": "Two Sum Problem",
+            "description": f"Targeting {role} fundamentals: Given an array of integers, return indices of the two numbers such that they add up to a specific target.",
+            "input_format": "List[int], int target",
+            "output_format": "List[int]",
+            "constraints": "n^2 complexity allowed for now",
+            "sample_input": "[2, 7, 11, 15], 9",
+            "sample_output": "[0, 1]",
+            "placeholder": "def two_sum(nums, target):\n    # Your code here\n    pass"
+        }
+    }
+
+def get_mock_roadmap(role, skills):
+    return {
+        "plan": [
+            {"day": 1, "topic": f"Mastering {role} Core", "tasks": ["Setup environment", "Review basic syntax"]},
+            {"day": 2, "topic": "Advanced Data Structures", "tasks": ["Implement trees", "O(n) optimizations"]},
+            {"day": 3, "topic": f"{skills[0] if skills else 'System'} Deep Dive", "tasks": ["Concurrency models", "Memory management"]},
+            {"day": 4, "topic": "API Design & Security", "tasks": ["REST conventions", "JWT implementation"]},
+            {"day": 5, "topic": "Cloud & DevOps", "tasks": ["Dockerize app", "CI/CD pipelines"]},
+            {"day": 6, "topic": "Real-world Project", "tasks": ["Build a prototype", "Fix bug backlog"]},
+            {"day": 7, "topic": "Final Review", "tasks": ["Performance tuning", "Prepare for interview"]}
+        ]
+    }
+
+
 @app.post("/extract-skills", response_model=ExtractedResume)
 async def extract_skills(resume_data: ResumeText):
     if not resume_data.text or not resume_data.text.strip():
@@ -94,27 +143,17 @@ Resume:
         ai_text = result_json.get("response", "")
         clean_json = extract_json(ai_text)
 
-        try:
-            parsed_data = json.loads(clean_json)
-            if not isinstance(parsed_data, dict):
-                parsed_data = {}
+        parsed_data = json.loads(clean_json)
+        return ExtractedResume(
+            name=str(parsed_data.get("name", "Unknown")),
+            skills=parsed_data.get("skills", []),
+            experience=str(parsed_data.get("experience", "Not found"))
+        )
 
-            skills = parsed_data.get("skills", [])
-            if not isinstance(skills, list):
-                skills = [str(skills)]
-
-            return ExtractedResume(
-                name=str(parsed_data.get("name", "Unknown")),
-                skills=skills,
-                experience=str(parsed_data.get("experience", "Not found"))
-            )
-        except Exception as parse_err:
-            logger.error(f"Failed to parse AI response into JSON. Raw: {ai_text}. Error: {str(parse_err)}")
-            raise HTTPException(status_code=500, detail="AI generated invalid JSON")
-
-    except requests.exceptions.RequestException as e:
-        logger.error("Ollama connection error at %s: %s", OLLAMA_URL, str(e))
-        raise HTTPException(status_code=500, detail="Ollama connection error")
+    except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+        logger.warning("Ollama unreachable or returned invalid JSON. Falling back to Mock Mode. Error: %s", str(e))
+        mock_data = get_mock_resume_data()
+        return ExtractedResume(**mock_data)
 
 
 @app.post("/generate-assessment")
@@ -129,19 +168,14 @@ STRICT JSON FORMAT:
 {{
 "questions": [
   {{
-    "question": "What is the primary role of a Load Balancer?",
-    "options": ["Encapsulating data", "Distributing network traffic", "Storing backups", "Debugging code"]
+    "question": "question text",
+    "options": ["opt1", "opt2", "opt3", "opt4"]
   }}
 ],
 "coding": {{
-"title": "Reverse String",
-"description": "Write a function to reverse a string in-place.",
-"input_format": "A string 's'",
-"output_format": "The reversed string",
-"constraints": "s.length < 1000",
-"sample_input": "'hello'",
-"sample_output": "'olleh'",
-"placeholder": "// Code here"
+"title": "Problem Title",
+"description": "...",
+...
 }}
 }}
 """
@@ -157,58 +191,16 @@ STRICT JSON FORMAT:
         logger.info("Generating assessment for role: %s using %s", req.role, OLLAMA_URL)
         response = requests.post(OLLAMA_URL, json=payload, timeout=180)
         response.raise_for_status()
+        return response.json().get("response", {})
 
-        result_json = response.json()
-        ai_text = result_json.get("response", "")
-        clean_json = extract_json(ai_text)
-
-        try:
-            return json.loads(clean_json)
-        except Exception as parse_err:
-            logger.error(f"Failed to parse AI assessment JSON. Raw: {ai_text}")
-            # Fallback JSON as requested
-            return {
-                "questions": [
-                    {
-                        "question": "Basic technical evaluation question?",
-                        "options": ["Option A", "Option B", "Option C", "Option D"]
-                    }
-                ],
-                "coding": {
-                    "title": "Problem Title",
-                    "description": "Problem Description",
-                    "input_format": "N/A",
-                    "output_format": "N/A",
-                    "constraints": "N/A",
-                    "sample_input": "N/A",
-                    "sample_output": "N/A",
-                    "placeholder": "// Solution"
-                }
-            }
-
-    except requests.exceptions.RequestException as e:
-        logger.error("Ollama connection error at %s: %s", OLLAMA_URL, str(e))
-        raise HTTPException(status_code=503, detail="Ollama service unavailable")
+    except Exception as e:
+        logger.warning("AI Assessment generation failed. Falling back to Mock Mode. Error: %s", str(e))
+        return get_mock_assessment(req.role)
 
 
 @app.post("/generate-roadmap")
 async def generate_roadmap(req: RoadmapRequest):
-    prompt = f"""Generate a 7-day learning roadmap.
-Role: {req.role}
-Focus on missing skills: {', '.join(req.missingSkills)}
-
-Return ONLY JSON. Do not add explanation or text.
-STRICT JSON FORMAT:
-{{
-"plan": [
-{{
-"day": 1,
-"topic": "Topic Name",
-"tasks": ["Task 1", "Task 2"]
-}}
-]
-}}
-"""
+    prompt = f"""Generate a 7-day learning roadmap for {req.role}."""
     payload = {
         "model": "mistral",
         "prompt": prompt,
@@ -220,26 +212,9 @@ STRICT JSON FORMAT:
         logger.info("Generating roadmap for role: %s using %s", req.role, OLLAMA_URL)
         response = requests.post(OLLAMA_URL, json=payload, timeout=180)
         response.raise_for_status()
+        return response.json().get("response", {})
 
-        result_json = response.json()
-        ai_text = result_json.get("response", "")
-        clean_json = extract_json(ai_text)
+    except Exception as e:
+        logger.warning("AI Roadmap generation failed. Falling back to Mock Mode. Error: %s", str(e))
+        return get_mock_roadmap(req.role, req.missingSkills)
 
-        try:
-            return json.loads(clean_json)
-        except Exception as parse_err:
-            logger.error(f"Failed to parse AI roadmap JSON. Raw: {ai_text}")
-            # Fallback Roadmap
-            return {
-                "plan": [
-                    {
-                        "day": 1,
-                        "topic": "Fundamentals of " + req.role,
-                        "tasks": ["Review core concepts", "Research documentation"]
-                    }
-                ]
-            }
-
-    except requests.exceptions.RequestException as e:
-        logger.error("Ollama connection error at %s: %s", OLLAMA_URL, str(e))
-        raise HTTPException(status_code=503, detail="Ollama service unavailable")

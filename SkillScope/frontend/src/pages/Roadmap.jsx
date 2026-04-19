@@ -6,6 +6,27 @@ const Roadmap = () => {
     const [loading, setLoading] = useState(false);
     const userId = localStorage.getItem('userId');
 
+    React.useEffect(() => {
+        const fetchExistingRoadmap = async () => {
+            if (!userId) return;
+            setLoading(true);
+            try {
+                const res = await API.get(`/roadmap/${userId}`);
+                if (res.data && res.data.roadmapContent) {
+                    setRoadmap(res.data);
+                }
+            } catch (err) {
+                // If 404, just ignore, it means no roadmap generated yet
+                if (err.response && err.response.status !== 404) {
+                    console.error("Error fetching roadmap:", err);
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchExistingRoadmap();
+    }, [userId]);
+
     const handleGenerate = async () => {
         setLoading(true);
         try {
@@ -17,6 +38,7 @@ const Roadmap = () => {
             setLoading(false);
         }
     };
+
 
     const parsedPlan = roadmap ? (typeof roadmap.roadmapContent === 'string' ? JSON.parse(roadmap.roadmapContent) : roadmap.plan) : [];
 

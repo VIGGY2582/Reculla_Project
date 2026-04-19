@@ -2,6 +2,7 @@ package com.skillscope.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillscope.dto.ResumeResponse;
+import com.skillscope.entity.Progress;
 import com.skillscope.entity.Resume;
 import com.skillscope.entity.User;
 import com.skillscope.repository.ResumeRepository;
@@ -30,6 +31,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     private final ResumeRepository resumeRepository;
     private final UserRepository userRepository;
+    private final ProgressService progressService;
     
     private final String uploadDir = "uploads/resumes/";
 
@@ -74,6 +76,11 @@ public class ResumeServiceImpl implements ResumeService {
                     .build();
 
             resumeRepository.save(resume);
+
+            // Automatically track extracted skills as COMPLETED
+            for (String skill : aiResponse.getSkills()) {
+                progressService.updateProgress(user.getId(), skill.trim(), Progress.ProgressStatus.COMPLETED);
+            }
 
             return aiResponse;
 

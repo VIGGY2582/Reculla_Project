@@ -6,6 +6,7 @@ import com.skillscope.dto.AnalysisResponse;
 import com.skillscope.entity.JobRole;
 import com.skillscope.entity.JobRoleSkill;
 import com.skillscope.entity.Resume;
+import com.skillscope.entity.Progress;
 import com.skillscope.repository.JobRoleRepository;
 import com.skillscope.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class SkillAnalysisServiceImpl implements SkillAnalysisService {
 
     private final ResumeRepository resumeRepository;
     private final JobRoleRepository jobRoleRepository;
+    private final ProgressService progressService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -75,7 +77,24 @@ public class SkillAnalysisServiceImpl implements SkillAnalysisService {
             throw new RuntimeException("No job roles configured in the system.");
         }
 
+        // Automate Progress Tracking
+        updateUserProgress(userId, bestMatch);
+
         return bestMatch;
+    }
+
+    private void updateUserProgress(UUID userId, AnalysisResponse analysis) {
+        log.info("Automating progress tracking for user: {}", userId);
+        
+        // Mark matched skills as COMPLETED
+        for (String skill : analysis.getMatchedSkills()) {
+            progressService.updateProgress(userId, skill, Progress.ProgressStatus.COMPLETED);
+        }
+        
+        // Mark missing skills as NOT_STARTED
+        for (String skill : analysis.getMissingSkills()) {
+            progressService.updateProgress(userId, skill, Progress.ProgressStatus.NOT_STARTED);
+        }
     }
 
     private Set<String> parseSkills(String skillsJson) {
