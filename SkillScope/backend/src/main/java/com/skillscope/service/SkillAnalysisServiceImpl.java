@@ -7,8 +7,10 @@ import com.skillscope.entity.JobRole;
 import com.skillscope.entity.JobRoleSkill;
 import com.skillscope.entity.Resume;
 import com.skillscope.entity.Progress;
+import com.skillscope.entity.User;
 import com.skillscope.repository.JobRoleRepository;
 import com.skillscope.repository.ResumeRepository;
+import com.skillscope.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class SkillAnalysisServiceImpl implements SkillAnalysisService {
 
     private final ResumeRepository resumeRepository;
     private final JobRoleRepository jobRoleRepository;
+    private final UserRepository userRepository;
     private final ProgressService progressService;
     private final ObjectMapper objectMapper;
 
@@ -80,7 +83,56 @@ public class SkillAnalysisServiceImpl implements SkillAnalysisService {
         // Automate Progress Tracking
         updateUserProgress(userId, bestMatch);
 
+        // Persistent Target Role
+        User user = userRepository.findById(userId).orElseThrow();
+        user.setTargetRole(bestMatch.getBestRole());
+        userRepository.save(user);
+
         return bestMatch;
+    }
+
+    @Override
+    public AnalysisResponse getCurrentAnalysis(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        String targetRoleName = user.getTargetRole();
+        if (targetRoleName == null || targetRoleName.isBlank()) {
+            log.warn("No target role set for user: {}", userId);
+            return null;
+        }
+
+        // Case-insensitive lookup and trimming for robustness
+        JobRole role = jobRoleRepository.findAll().stream()
+                .filter(r -> r.getName().equalsIgnoreCase(targetRoleName.trim()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Target role not found: " + targetRoleName));
+
+        List<Progress> progressList = progressService.getProgress(userId);
+        Set<String> completedSkills = progressList.stream()
+                .filter(p -> p.getStatus() == Progress.ProgressStatus.COMPLETED)
+                .map(p -> p.getSkill().toLowerCase().trim())
+                .collect(Collectors.toSet());
+
+        Set<String> roleSkills = role.getSkills().stream()
+                .map(s -> s.getSkillName().toLowerCase().trim())
+                .collect(Collectors.toSet());
+
+        Set<String> matched = new HashSet<>(roleSkills);
+        matched.retainAll(completedSkills);
+
+        Set<String> missing = new HashSet<>(roleSkills);
+        missing.removeAll(completedSkills);
+
+        double percentage = roleSkills.isEmpty() ? 0 : (double) matched.size() / roleSkills.size() * 100;
+
+        return AnalysisResponse.builder()
+                .bestRole(role.getName())
+                .matchPercentage(Math.round(percentage * 100.0) / 100.0)
+                .matchedSkills(new ArrayList<>(matched))
+                .missingSkills(new ArrayList<>(missing))
+                .recommendation(generateRecommendation(role.getName(), percentage, missing))
+                .build();
     }
 
     private void updateUserProgress(UUID userId, AnalysisResponse analysis) {

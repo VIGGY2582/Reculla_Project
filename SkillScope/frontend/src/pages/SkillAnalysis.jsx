@@ -7,6 +7,25 @@ const SkillAnalysis = () => {
     const [error, setError] = useState('');
     const userId = localStorage.getItem('userId');
 
+    React.useEffect(() => {
+        const fetchCurrentAnalysis = async () => {
+            if (!userId) return;
+            setLoading(true);
+            try {
+                const res = await API.get(`/skills/current/${userId}`);
+                setAnalysis(res.data);
+            } catch (err) {
+                // Ignore 404, it just means no analysis exists yet
+                if (err.response && err.response.status !== 404) {
+                    console.error("Error fetching analysis:", err);
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCurrentAnalysis();
+    }, [userId]);
+
     const handleAnalyze = async () => {
         setLoading(true);
         setError('');

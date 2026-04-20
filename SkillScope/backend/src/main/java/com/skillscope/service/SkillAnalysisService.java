@@ -5,4 +5,5 @@ import java.util.UUID;
 
 public interface SkillAnalysisService {
     AnalysisResponse analyzeUserSkills(UUID userId);
+    AnalysisResponse getCurrentAnalysis(UUID userId);
 }

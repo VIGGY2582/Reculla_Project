@@ -30,4 +30,13 @@ public class SkillAnalysisController {
     public ResponseEntity<AnalysisResponse> analyzeSpecificUser(@PathVariable UUID userId) {
         return ResponseEntity.ok(skillAnalysisService.analyzeUserSkills(userId));
     }
+
+    @GetMapping("/skills/current/{userId}")
+    public ResponseEntity<AnalysisResponse> getTargetSkillAnalysis(@PathVariable UUID userId) {
+        AnalysisResponse current = skillAnalysisService.getCurrentAnalysis(userId);
+        if (current == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(current);
+    }
 }

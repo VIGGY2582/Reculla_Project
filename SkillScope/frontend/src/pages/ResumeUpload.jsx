@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 
 const ResumeUpload = () => {
     const [file, setFile] = useState(null);
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);
@@ -26,7 +28,8 @@ const ResumeUpload = () => {
             await API.post('/resume/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            setMessage('Resume uploaded successfully!');
+            setMessage('Resume uploaded successfully! Redirecting to skill analysis...');
+            setTimeout(() => navigate('/analysis'), 1500);
         } catch (err) {
             setMessage(err.response?.data?.error || 'Failed to upload resume.');
         } finally {
